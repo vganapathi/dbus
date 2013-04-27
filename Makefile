@@ -3,7 +3,7 @@
 #
 
 SRC := avl.c log_functions.c client_mgr.c server_stats.c dbus_server.c export_mgr.c
-INC := common_utils.h abstract_atomic.h abstract_mem.h avltree.h client_mgr.h common_utils.h export_mgr.h ganesha_dbus.h log.h nfs_core.h server_stats.h server_stats_private.h wait_queue.h
+INC := common_utils.h abstract_atomic.h abstract_mem.h avltree.h client_mgr.h common_utils.h export_mgr.h osc_osd_dbus.h log.h nfs_core.h server_stats.h server_stats_private.h wait_queue.h
 OBJ := $(SRC:.c=.o)
 LIB := libosddbus.a
 #PAN_SANDBOX := /net/nfs.panwest.panasas.com/sb4/vganapathi/sam-dev

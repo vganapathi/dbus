@@ -26,21 +26,17 @@
  * -------------
  */
 
-//#include "config.h"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/param.h>
 #include <time.h>
 #include <pthread.h>
 #include <assert.h>
-//#include "nlm_list.h"
-//#include "fsal.h"
 #include "wait_queue.h"
 #include "nfs_core.h"
 #include "log.h"
 #include "avltree.h"
-//#include "nfs_rpc_callback.h"
-#include "ganesha_dbus.h"
+#include "osc_osd_dbus.h"
 #include "abstract_mem.h"
 #include "export_mgr.h"
 
@@ -65,13 +61,13 @@
 #define GSH_DBUS_SHUTDOWN  0x0001
 #define GSH_DBUS_SLEEPING  0x0002
 
-struct ganesha_dbus_handler
+struct osc_osd_dbus_handler
 {
     char *name;
     struct avltree_node node_k;
     DBusObjectPathVTable vtable;
 };
-typedef struct ganesha_dbus_handler ganesha_dbus_handler_t;
+typedef struct osc_osd_dbus_handler osc_osd_dbus_handler_t;
 
 struct _dbus_thread_state
 {
@@ -91,10 +87,10 @@ static inline int
 dbus_callout_cmpf(const struct avltree_node *lhs,
                   const struct avltree_node *rhs)
 {
-    ganesha_dbus_handler_t *lk, *rk;
+    osc_osd_dbus_handler_t *lk, *rk;
 
-    lk = avltree_container_of(lhs, ganesha_dbus_handler_t, node_k);
-    rk = avltree_container_of(rhs, ganesha_dbus_handler_t, node_k);
+    lk = avltree_container_of(lhs, osc_osd_dbus_handler_t, node_k);
+    rk = avltree_container_of(rhs, osc_osd_dbus_handler_t, node_k);
 
     return (strcmp(lk->name, rk->name));
 }
@@ -303,7 +299,7 @@ out:
  *
  * status reply is the first part of every reply message
  * dbus has its own error handling but that is for the connection.
- * this status is for ganesha level method result reporting.
+ * this status is for osc_osd level method result reporting.
  * If a NULL is passed for error message, we stuff a default
  * "BUSY".  The error message is for things like GUI display or
  * logging but use the status bool for code flow.
@@ -428,7 +424,7 @@ path_unregistered_func (DBusConnection  *connection,
 int32_t gsh_dbus_register_path(const char *name,
 			       struct gsh_dbus_interface **interfaces)
 {
-    ganesha_dbus_handler_t *handler;
+    osc_osd_dbus_handler_t *handler;
     struct avltree_node *node;
     char path[512];
     int code = 0;
@@ -436,8 +432,8 @@ int32_t gsh_dbus_register_path(const char *name,
     /* XXX if this works, add ifc level */
     snprintf(path, 512, "/org/osc/osd/%s", name);
 
-    handler = (ganesha_dbus_handler_t *)
-        gsh_malloc(sizeof(ganesha_dbus_handler_t));
+    handler = (osc_osd_dbus_handler_t *)
+        gsh_malloc(sizeof(osc_osd_dbus_handler_t));
     handler->name = gsh_strdup(path);
     handler->vtable.unregister_function = path_unregistered_func;
     handler->vtable.message_function =  dbus_message_entrypoint;
@@ -474,7 +470,7 @@ out:
 void gsh_dbus_pkgshutdown(void)
 {
     struct avltree_node *node, *onode;
-    ganesha_dbus_handler_t *handler;
+    osc_osd_dbus_handler_t *handler;
 
     LogDebug(COMPONENT_DBUS, "shutdown");
 
@@ -483,7 +479,7 @@ void gsh_dbus_pkgshutdown(void)
     node = avltree_first(&thread_state.callouts);
     do {
         if (onode) {
-            handler = avltree_container_of(onode, ganesha_dbus_handler_t,
+            handler = avltree_container_of(onode, osc_osd_dbus_handler_t,
                                            node_k);
             dbus_bus_release_name(thread_state.dbus_conn, handler->name,
                                          &thread_state.dbus_err);
@@ -497,7 +493,7 @@ void gsh_dbus_pkgshutdown(void)
         }
     } while ((onode = node) && (node = avltree_next(node)));
     if (onode) {
-        handler = avltree_container_of(onode, ganesha_dbus_handler_t,
+        handler = avltree_container_of(onode, osc_osd_dbus_handler_t,
                                        node_k);
         dbus_bus_release_name(thread_state.dbus_conn, handler->name,
                                      &thread_state.dbus_err);

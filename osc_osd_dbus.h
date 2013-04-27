@@ -26,8 +26,8 @@
  * -------------
  */
 
-#ifndef _GANESHA_DBUS_H
-#define _GANESHA_DBUS_H
+#ifndef _OSC_OSD_DBUS_H
+#define _OSC_OSD_DBUS_H
 
 #include <dbus/dbus.h>
 #include "log.h"
@@ -35,7 +35,7 @@
 
 /**
  *
- * \file ganesha_dbus.h
+ * \file osc_osd_dbus.h
  * \author Matt Benjamin and Lee Dobryden
  * \brief Low-level DBUS message server and callout framework.
  *
@@ -111,4 +111,4 @@ int32_t gsh_dbus_register_path(const char *name,
 
 /* more to come */
 
-#endif /* _GANESHA_DBUS_H */
+#endif /* _OSC_OSD_DBUS_H */

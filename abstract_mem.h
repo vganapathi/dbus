@@ -29,7 +29,7 @@
  * @brief  Abstract memory shims to allow swapping out allocators
  *
  * This file's purpose is to allow us to easily replace the memory
- * allocator used by Ganesha.  Further, it provides a pool abstraction
+ * allocator used by osc-osd.  Further, it provides a pool abstraction
  * that may be implemented in terms of the normal allocator that may
  * be expanded at a later date.  These are intended to be thin
  * wrappers, but conditionally compiled trace information could be
@@ -442,7 +442,7 @@ pool_free(pool_t *pool, void* object)
  * @page BasicPoolSubstrate The Basic Pool Substrate
  *
  * These functions provide a non-preallocated, general-purpose pool
- * abstraction to Ganesha.  Currently it is only a wrapper around
+ * abstraction to osc-osd.  Currently it is only a wrapper around
  * gsh_malloc and gsh_free, but there are plans to, at a later date,
  * rewrite it in terms of an exposed pool interface in the underlying
  * allocator.

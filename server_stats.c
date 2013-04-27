@@ -47,16 +47,10 @@
 #include <sys/param.h>
 #include <pthread.h>
 #include <assert.h>
-//#include <arpa/inet.h>
-//#include "nlm_list.h"
-//#include "fsal.h"
 #include "nfs_core.h"
 #include "log.h"
 #include "avltree.h"
-//#include "ganesha_types.h"
-#ifdef USE_DBUS_STATS
-#include "ganesha_dbus.h"
-#endif
+#include "osc_osd_dbus.h"
 #include "client_mgr.h"
 #include "export_mgr.h"
 #include "server_stats.h"
@@ -85,31 +79,8 @@ typedef enum {
 	LAYOUT_OP
 } proto_op_type;
 
-#if 0
-static const uint32_t nfsv3_optype[NFS_V3_NB_COMMAND] = {
-	[NFSPROC3_READ] = READ_OP,
-	[NFSPROC3_WRITE] = WRITE_OP,
-};
-
-static const uint32_t nfsv40_optype[NFS_V40_NB_OPERATION] = {
-	[NFS4_OP_READ] = READ_OP,
-	[NFS4_OP_WRITE] = WRITE_OP,
-};
-#endif
-
 #define READ_OP 0
 #define WRITE_OP 1
-#if 0
-static const uint32_t nfsv41_optype[NFS_V41_NB_OPERATION] = {
-	[NFS4_OP_READ] = READ_OP,
-	[NFS4_OP_WRITE] = WRITE_OP,
-	[NFS4_OP_GETDEVICEINFO] = LAYOUT_OP,
-	[NFS4_OP_GETDEVICELIST] = LAYOUT_OP,
-	[NFS4_OP_LAYOUTCOMMIT] = LAYOUT_OP,
-	[NFS4_OP_LAYOUTGET] = LAYOUT_OP,
-	[NFS4_OP_LAYOUTRETURN] = LAYOUT_OP,
-};
-#endif
 
 /* latency stats
  */
@@ -224,6 +195,7 @@ struct _9p_stats {
  *
  * @TODO make them inlines for release
  */
+#if 0
 
 static struct nfsv3_stats *get_v3(struct gsh_stats *stats,
 				  pthread_mutex_t *lock)
@@ -284,6 +256,7 @@ static struct nfsv40_stats *get_v40(struct gsh_stats *stats,
 	}
 	return stats->nfsv40;
 }
+#endif
 
 static struct nfsv41_stats *get_v41(struct gsh_stats *stats,
 				  pthread_mutex_t *lock)
@@ -300,6 +273,7 @@ static struct nfsv41_stats *get_v41(struct gsh_stats *stats,
 /* Functions for recording statistics
  */
 
+#if 0
 /**
  * @brief Record latency stats
  *
@@ -335,6 +309,7 @@ void record_latency(struct proto_op *op,
 	if(op->queue_latency.max == 0L || op->queue_latency.max < qwait_time)
 		(void)atomic_store_uint64_t(&op->queue_latency.max, qwait_time);
 }
+#endif
 
 /**
  * @brief count the i/o stats
@@ -416,6 +391,7 @@ static void record_io_stats(struct gsh_stats *gsh_st,
 	record_io(iop, requested, transferred, success);
 }
 
+#if 0
 /**
  * @brief count the protocol operation
  *
@@ -857,6 +833,7 @@ out:
 	return;
 }
 #endif
+#endif
 
 /**
  * @brief Record I/O stats for protocol read/write
@@ -1007,6 +984,7 @@ static void server_dbus_iostats(struct xfer_op *iop,
 						  &struct_iter);
 }
 
+#if 0
 void server_dbus_v3_iostats (struct nfsv3_stats *v3p,
 			     DBusMessageIter *iter)
 {
@@ -1028,6 +1006,7 @@ void server_dbus_v40_iostats (struct nfsv40_stats *v40p,
 	server_dbus_iostats(&v40p->read, iter);
 	server_dbus_iostats(&v40p->write, iter);
 }
+#endif
 
 void server_dbus_v41_iostats (struct nfsv41_stats *v41p,
 			      DBusMessageIter *iter)
@@ -1052,6 +1031,7 @@ void server_dbus_v41_iostats (struct nfsv41_stats *v41p,
  * @param iop   [IN] pointer to xfer op sub-structure of interest
  * @param iter  [IN] interator in reply stream to fill
  */
+#if 0
 
 static void server_dbus_layouts(struct layout_op *lop,
 				DBusMessageIter *iter)
@@ -1090,6 +1070,7 @@ void server_dbus_v41_layouts(struct nfsv41_stats *v41p,
 }
 
 #endif /* USE_DBUS_STATS */
+#endif
 
 /**
  * @brief Free statistics storage

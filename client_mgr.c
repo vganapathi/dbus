@@ -37,8 +37,6 @@
  * @brief Protocol client manager
  */
 
-//#include "config.h"
-
 #include <time.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -46,18 +44,10 @@
 #include <pthread.h>
 #include <assert.h>
 #include <string.h>
-//#include <arpa/inet.h>
-//#include <sys/socket.h>
-//#include <netinet/in.h>
-//#include "nlm_list.h"
-//#include "fsal.h"
 #include "nfs_core.h"
 #include "log.h"
 #include "avltree.h"
-//#include "ganesha_types.h"
-//#ifdef USE_DBUS_STATS
-#include "ganesha_dbus.h"
-//#endif
+#include "osc_osd_dbus.h"
 #include "client_mgr.h"
 #include "common_utils.h"
 #include "export_mgr.h"
@@ -97,49 +87,6 @@ client_ip_cmpf(const struct avltree_node *lhs,
 	else
 		return memcmp(lk->addr.addr, rk->addr.addr, lk->addr.len);
 }
-
-#if 0
-/**
- * @brief Atomically subtract from a uint64_t
- *
- * This function atomically subtracts from the supplied value.
- *
- * @param[in,out] minuend    Number to be subtracted from
- * @param[in]     subtrahend Number to subtract
- *
- * @return The value after subtraction.
- */
-
-#ifdef GCC_ATOMIC_FUNCTIONS
-static inline uint64_t
-atomic_sub_uint64_t(uint64_t *minuend, uint64_t subtrahend)
-{
-         return __atomic_sub_fetch(minuend, subtrahend, __ATOMIC_SEQ_CST);
-}
-#elif defined(GCC_SYNC_FUNCTIONS)
-static inline uint64_t
-atomic_sub_uint64_t(uint64_t *minuend, uint64_t subtrahend)
-{
-         return __sync_sub_and_fetch(minuend, subtrahend);
-}
-#endif
-
-/**
- * @brief Atomically decrement a uint64_t
- *
- * This function atomically subtracts 1 from the supplied value.
- *
- * @param[in,out] var Pointer to the variable to modify
- *
- * @return The value after decrement.
- */
-
-static inline uint64_t
-atomic_dec_uint64_t(uint64_t *var)
-{
-    return atomic_sub_uint64_t(var, 1);
-}
-#endif
 
 /**
  * @brief Lookup the client manager struct for this client IP
@@ -308,8 +255,6 @@ int foreach_gsh_client(bool (*cb)(struct gsh_client *cl,
 	return cnt;
 }
 
-#ifdef USE_DBUS_STATS
-
 /* DBUS helpers
  */
 
@@ -353,7 +298,7 @@ static bool arg_ipaddr(DBusMessageIter *args,
 /* DBUS interface(s)
  */
 
-/* org.ganesha.nfsd.clienttmgr interface
+/* org.osc.osd.nfsd.clienttmgr interface
  */
 
 /**
@@ -512,7 +457,7 @@ static struct gsh_dbus_interface cltmgr_client_table = {
 	.signals = NULL
 };
 
-/* org.ganesha.nfsd.clientstats interface
+/* org.osc.osd.nfsd.clientstats interface
  */
 
 /* DBUS client manager stats helpers
@@ -532,102 +477,6 @@ static struct gsh_client *lookup_client(DBusMessageIter *args,
 	}
 }
 		   
-/**
- * DBUS method to report NFSv3 I/O statistics
- *
- */
-
-static bool
-get_nfsv3_stats_io(DBusMessageIter *args,
-		   DBusMessage *reply)
-{
-	struct gsh_client *client = NULL;
-	struct server_stats *server_st = NULL;
-	bool success = true;
-	char *errormsg = NULL;
-	DBusMessageIter iter;
-
-	dbus_message_iter_init_append(reply, &iter);
-	client = lookup_client(args, &errormsg);
-	if(client == NULL) {
-		success = false;
-		if(errormsg == NULL)
-			errormsg = "Client IP address not found";
-	} else {
-		server_st = container_of(client, struct server_stats, client);
-		if(server_st->st.nfsv3 == NULL) {
-			success = false;
-			errormsg = "Client does not have any NFSv3 activity";
-		}
-	}
-	dbus_status_reply(&iter, success, errormsg);
-	if(success)
-		server_dbus_v3_iostats(server_st->st.nfsv3, &iter);
-
-	if(client != NULL)
-		put_gsh_client(client);
-	return true;
-}
-
-static struct gsh_dbus_method cltmgr_show_v3_io = {
-	.name = "GetNFSv3IO",
-	.method = get_nfsv3_stats_io,
-	.args = { IPADDR_ARG,
-		  STATUS_REPLY,
-		  TIMESTAMP_REPLY,
-		  IOSTATS_REPLY,
-		  END_ARG_LIST
-	}
-};
-
-/**
- * DBUS method to report NFSv40 I/O statistics
- *
- */
-
-static bool
-get_nfsv40_stats_io(DBusMessageIter *args,
-		    DBusMessage *reply)
-{
-	struct gsh_client *client = NULL;
-	struct server_stats *server_st = NULL;
-	bool success = true;
-	char *errormsg = "OK";
-	DBusMessageIter iter;
-
-	dbus_message_iter_init_append(reply, &iter);
-	client = lookup_client(args, &errormsg);
-	if(client == NULL) {
-		success = false;
-		if(errormsg == NULL)
-			errormsg = "Client IP address not found";
-	} else {
-		server_st = container_of(client, struct server_stats, client);
-		if(server_st->st.nfsv40 == NULL) {
-			success = false;
-			errormsg = "Client does not have any NFSv4.0 activity";
-		}
-	}
-	dbus_status_reply(&iter, success, errormsg);
-	if(success)
-		server_dbus_v40_iostats(server_st->st.nfsv40, &iter);
-
-	if(client != NULL)
-		put_gsh_client(client);
-	return true;
-}
-
-static struct gsh_dbus_method cltmgr_show_v40_io = {
-	.name = "GetNFSv40IO",
-	.method = get_nfsv40_stats_io,
-	.args = { IPADDR_ARG,
-		  STATUS_REPLY,
-		  TIMESTAMP_REPLY,
-		  IOSTATS_REPLY,
-		  END_ARG_LIST
-	}
-};
-
 /**
  * DBUS method to report NFSv41 I/O statistics
  *
@@ -676,59 +525,8 @@ static struct gsh_dbus_method cltmgr_show_v41_io = {
 	}
 };
 
-/**
- * DBUS method to report NFSv41 layout statistics
- *
- */
-
-static bool
-get_nfsv41_stats_layouts(DBusMessageIter *args,
-			 DBusMessage *reply)
-{
-	struct gsh_client *client = NULL;
-	struct server_stats *server_st = NULL;
-	bool success = true;
-	char *errormsg = "OK";
-	DBusMessageIter iter;
-
-	dbus_message_iter_init_append(reply, &iter);
-	client = lookup_client(args, &errormsg);
-	if(client == NULL) {
-		success = false;
-		if(errormsg == NULL)
-			errormsg = "Client IP address not found";
-	} else {
-		server_st = container_of(client, struct server_stats, client);
-		if(server_st->st.nfsv41 == NULL) {
-			success = false;
-			errormsg = "Client does not have any NFSv4.1 activity";
-		}
-	}
-	dbus_status_reply(&iter, success, errormsg);
-	if(success)
-		server_dbus_v41_layouts(server_st->st.nfsv41, &iter);
-
-	if(client != NULL)
-		put_gsh_client(client);
-	return true;
-}
-
-static struct gsh_dbus_method cltmgr_show_v41_layouts = {
-	.name = "GetNFSv41Layouts",
-	.method = get_nfsv41_stats_layouts,
-	.args = { IPADDR_ARG,
-		  STATUS_REPLY,
-		  TIMESTAMP_REPLY,
-		  LAYOUTS_REPLY,
-		  END_ARG_LIST
-	}
-};
-
 static struct gsh_dbus_method *cltmgr_stats_methods[] = {
-	&cltmgr_show_v3_io,
-	&cltmgr_show_v40_io,
 	&cltmgr_show_v41_io,
-	&cltmgr_show_v41_layouts,
 	NULL
 };
 
@@ -739,7 +537,7 @@ static struct gsh_dbus_interface cltmgr_stats_table = {
 	.signals = NULL
 };
 
-/* DBUS list of interfaces on /org/ganesha/nfsd/ClientMgr
+/* DBUS list of interfaces on /org/osc/osd/nfsd/ClientMgr
  */
 
 static struct gsh_dbus_interface *cltmgr_interfaces[] = {
@@ -747,8 +545,6 @@ static struct gsh_dbus_interface *cltmgr_interfaces[] = {
 	&cltmgr_stats_table,
 	NULL
 };
-
-#endif /* USE_DBUS_STATS */
 
 /**
  * @brief Initialize client manager
@@ -770,7 +566,7 @@ void gsh_client_init(void)
 #endif
 	pthread_rwlock_init(&client_by_ip.lock, &rwlock_attr);
 	avltree_init(&client_by_ip.t, client_ip_cmpf, 0);
-#ifdef USE_DBUS_STATS
+
 	gsh_dbus_register_path("ClientMgr", cltmgr_interfaces);
         localtime(&ServerBootTime);
         /* DBUS event thread */
@@ -781,9 +577,6 @@ void gsh_client_init(void)
                     "Could not create gsh_dbus_thread, error = %d (%s)",
                     errno, strerror(errno));
         }
-        LogEvent(COMPONENT_THREAD, "gsh_dbusthread was started successfully");
-
-#endif
 }
 
 
